@@ -26,7 +26,6 @@ body{
 }
 .hidden{display:none!important}
 
-/* topbar */
 #topbar{
   position:sticky;top:0;z-index:50;height:56px;padding:0 1.2rem;
   display:flex;align-items:center;gap:1rem;
@@ -42,16 +41,13 @@ body{
 #globalStat{flex:1;font:500 11px var(--mono);color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #globalStat b{color:var(--ink)}
 
-/* main */
 #main{max-width:1100px;margin:0 auto;padding:1.5rem 1.2rem 120px}
 
-/* card */
 .card{background:var(--bg2);border:1px solid var(--line);border-radius:var(--radius);padding:1.4rem;margin-bottom:1rem}
 .card-head{display:flex;align-items:center;gap:.6rem;padding-bottom:.8rem;margin-bottom:1rem;border-bottom:1px dashed var(--line2);font:700 10px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--ink3)}
 .card-head b{color:var(--ink)}
 .card-head i{width:8px;height:8px;border-radius:50%;background:var(--accent);display:block}
 
-/* form */
 label.lab{display:flex;align-items:center;gap:.5rem;font:700 10px var(--mono);color:var(--ink2);text-transform:uppercase;letter-spacing:.14em;margin:1rem 0 .4rem}
 label.lab::before{content:"";width:6px;height:6px;background:var(--accent);border-radius:2px;flex-shrink:0}
 input[type=text],input[type=password],textarea,select{
@@ -65,7 +61,6 @@ select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml;u
 .row{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
 @media(max-width:600px){.row{grid-template-columns:1fr}}
 
-/* buttons */
 .btn{min-height:42px;padding:.55rem 1.2rem;border-radius:var(--radius-sm);font:700 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;cursor:pointer;border:1px solid transparent;transition:.18s;display:inline-flex;align-items:center;justify-content:center;gap:.4rem}
 .btn:disabled{opacity:.4;cursor:not-allowed}
 .btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
@@ -85,7 +80,6 @@ select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml;u
 .btn-mega:hover:not(:disabled)::after{background:rgba(255,255,255,.35);transform:rotate(-45deg)}
 .btn-mega:disabled{opacity:.5;cursor:not-allowed}
 
-/* mode toggle */
 .mode-toggle{display:flex;gap:.5rem;margin-bottom:1rem;background:var(--bg);padding:4px;border-radius:12px;border:1px solid var(--line)}
 .mode-toggle button{
   flex:1;padding:.7rem;border:none;border-radius:9px;background:transparent;color:var(--ink3);
@@ -93,7 +87,24 @@ select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml;u
 }
 .mode-toggle button.active{background:var(--bg3);color:var(--ink);box-shadow:0 2px 8px rgba(0,0,0,.3)}
 
-/* api panel */
+/* Image upload */
+.upload-zone{
+  position:relative;border:1.5px dashed var(--line2);border-radius:12px;padding:1rem;text-align:center;
+  cursor:pointer;background:var(--bg);transition:.2s;
+}
+.upload-zone:hover{border-color:var(--accent);background:var(--bg3)}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-zone .icon{font-size:1.4rem;margin-bottom:.2rem}
+.upload-zone .txt{font:500 11px var(--mono);color:var(--ink3)}
+.upload-preview{display:flex;align-items:center;gap:.7rem;margin-top:.6rem;padding:.5rem;background:var(--bg);border-radius:10px;border:1px solid var(--line)}
+.upload-preview img{width:52px;height:52px;object-fit:cover;border-radius:8px;border:1px solid var(--line2)}
+.upload-preview .info{flex:1;font:500 10px var(--mono);color:var(--ink3)}
+.upload-preview .rm{
+  width:28px;height:28px;border-radius:50%;border:none;background:var(--red);color:#fff;
+  cursor:pointer;font-size:.7rem;display:grid;place-items:center;transition:.2s;
+}
+.upload-preview .rm:hover{transform:rotate(90deg)}
+
 #apiPanel{position:fixed;bottom:0;left:0;right:0;z-index:40;background:var(--bg2);border-top:1px solid var(--line);box-shadow:0 -8px 32px rgba(0,0,0,.4)}
 #apiHead{padding:.75rem 1.2rem;cursor:pointer;display:flex;align-items:center;gap:.8rem;user-select:none}
 #apiHead:hover{background:rgba(255,255,255,.03)}
@@ -107,7 +118,6 @@ select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml;u
 #apiPanel .status.ok{background:rgba(52,211,153,.08);color:var(--green);border-left-color:var(--green)}
 #apiPanel .status.err{background:rgba(248,113,113,.08);color:var(--red);border-left-color:var(--red)}
 
-/* status / steps */
 .status{font:500 11px/1.5 var(--mono);padding:.6rem .9rem;border-radius:10px;background:var(--bg3);color:var(--ink2);border-left:3px solid var(--line2);word-break:break-word;margin-top:.5rem}
 .status.ok{background:rgba(52,211,153,.08);color:var(--green);border-left-color:var(--green)}
 .status.err{background:rgba(248,113,113,.08);color:var(--red);border-left-color:var(--red)}
@@ -122,7 +132,6 @@ select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml;u
 .spinner{display:inline-block;width:11px;height:11px;border:2px solid rgba(108,140,255,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:4px}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* results */
 .result-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;margin-top:.8rem}
 .media-card{background:var(--bg3);border:1px solid var(--line);border-radius:14px;overflow:hidden;transition:.2s}
 .media-card:hover{border-color:var(--line2)}
@@ -133,13 +142,11 @@ select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml;u
 .media-card .actions{display:flex;gap:.4rem;margin-top:.4rem;flex-wrap:wrap}
 .media-card .actions .btn{min-height:30px;padding:.3rem .7rem;font-size:9px}
 
-/* progress bar */
 .progress-wrap{margin-top:.6rem}
 .progress-bar{height:6px;background:var(--bg);border-radius:99px;overflow:hidden}
 .progress-bar .fill{height:100%;background:var(--accent);border-radius:99px;transition:width .3s}
 .progress-text{font:500 10px var(--mono);color:var(--ink3);margin-top:.3rem}
 
-/* toast */
 #toast{position:fixed;top:68px;left:50%;transform:translateX(-50%) translateY(-120px);display:flex;align-items:center;gap:.6rem;background:var(--bg3);color:var(--ink);border-radius:99px;padding:.7rem 1.4rem;font:600 11px var(--mono);z-index:200;opacity:0;transition:.3s cubic-bezier(.2,.9,.3,1.2);max-width:min(500px,92vw);box-shadow:0 8px 32px rgba(0,0,0,.5);border:1px solid var(--line)}
 #toast::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0}
 #toast.on{transform:translateX(-50%) translateY(0);opacity:1}
@@ -162,7 +169,6 @@ select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml;u
 
 <div id="main">
 
-  <!-- Mode toggle -->
   <div class="mode-toggle">
     <button class="active" data-mode="image">🖼️ Image</button>
     <button data-mode="video">🎬 Vidéo</button>
@@ -172,8 +178,20 @@ select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml;u
   <div id="panelImage" class="card">
     <div class="card-head"><i></i><b>Génération d'image</b> — Agnes Image 2.5 Flash</div>
 
+    <label class="lab">Image de référence (optionnel)</label>
+    <div class="upload-zone" id="imageUploadZone">
+      <input type="file" id="imageFileInput" accept="image/*">
+      <div class="icon">📷</div>
+      <div class="txt">Cliquez ou glissez une image</div>
+    </div>
+    <div id="imagePreview" class="upload-preview hidden">
+      <img id="imagePreviewImg" src="" alt="">
+      <div class="info" id="imagePreviewInfo"></div>
+      <button class="rm" id="imageRemoveBtn">✕</button>
+    </div>
+
     <label class="lab">Prompt</label>
-    <textarea id="imagePrompt" placeholder="Décrivez l'image que vous voulez générer…"></textarea>
+    <textarea id="imagePrompt" placeholder="Décrivez l'image que vous voulez générer… (optionnel si une image de référence est fournie)"></textarea>
 
     <div class="row" style="margin-top:.4rem">
       <div>
@@ -207,6 +225,18 @@ select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml;u
   <!-- VIDEO PANEL -->
   <div id="panelVideo" class="card hidden">
     <div class="card-head"><i></i><b>Génération de vidéo</b> — Agnes Video 2.5 Flash · 720P</div>
+
+    <label class="lab">Image de référence (optionnel)</label>
+    <div class="upload-zone" id="videoUploadZone">
+      <input type="file" id="videoFileInput" accept="image/*">
+      <div class="icon">📷</div>
+      <div class="txt">Cliquez ou glissez une image</div>
+    </div>
+    <div id="videoPreview" class="upload-preview hidden">
+      <img id="videoPreviewImg" src="" alt="">
+      <div class="info" id="videoPreviewInfo"></div>
+      <button class="rm" id="videoRemoveBtn">✕</button>
+    </div>
 
     <label class="lab">Prompt</label>
     <textarea id="videoPrompt" placeholder="Décrivez la vidéo que vous voulez générer… Ex: Une vague déferlante au coucher du soleil, ralenti cinématographique, lumière dorée"></textarea>
@@ -243,7 +273,6 @@ select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml;u
     </div>
   </div>
 
-  <!-- Results -->
   <div id="resultsBox" class="hidden">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
       <h3 style="font:800 14px var(--sans);color:var(--ink)">Résultats</h3>
@@ -252,12 +281,10 @@ select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml;u
     <div class="result-grid" id="resultGrid"></div>
   </div>
 
-  <!-- Steps -->
   <div id="stepsBox" class="hidden" style="margin-top:1rem"></div>
 
 </div>
 
-<!-- API Panel -->
 <div id="apiPanel">
   <div id="apiHead">
     <span class="lbl">🔑 AGNES API</span>
@@ -275,19 +302,15 @@ select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml;u
   </div>
 </div>
 
-<!-- Toast -->
 <div id="toast"></div>
 
 <script>
 'use strict';
 
-/* ============================================================
-   CONFIG
-============================================================ */
 const AGNES_BASE = 'https://apihub.agnes-ai.com';
 const AGNES_IMAGE_MODEL = 'agnes-image-2.5-flash';
 const AGNES_VIDEO_MODEL = 'agnes-video-2.5-flash';
-const LS_KEYS = 'creatspeed_keys_v1';
+const LS_KEYS = 'creatspeed_keys_v2';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -295,11 +318,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 let apiKeys = [];
 let currentMode = 'image';
-let videoPollTimer = null;
+let imageBase64 = null;
+let videoBase64 = null;
 
-/* ============================================================
-   TOAST
-============================================================ */
 function toast(msg, type = '') {
   const t = $('toast');
   t.textContent = msg;
@@ -308,12 +329,8 @@ function toast(msg, type = '') {
   t._tid = setTimeout(() => t.className = type, 3500);
 }
 
-/* ============================================================
-   API KEYS
-============================================================ */
 function updateApiTag() {
-  const tag = $('modeTag');
-  const stat = $('globalStat');
+  const tag = $('modeTag'), stat = $('globalStat');
   if (apiKeys.length) {
     tag.textContent = 'LIVE · ' + apiKeys.length;
     tag.className = 'live';
@@ -358,8 +375,7 @@ async function validateKeys() {
     } else {
       apiKeys = valid;
       try { localStorage.setItem(LS_KEYS, JSON.stringify(valid)); } catch(e) {}
-      status.className = 'status ok';
-      status.textContent = '✓ ' + valid.length + ' clé(s) validée(s)';
+      status.className = 'status ok'; status.textContent = '✓ ' + valid.length + ' clé(s) validée(s)';
       toast(valid.length + ' clé(s) validée(s)', 'ok');
     }
     updateApiTag();
@@ -368,16 +384,13 @@ async function validateKeys() {
   }
 }
 
-/* ============================================================
-   RETRY HELPER (429 backoff)
-============================================================ */
 async function fetchWithRetry(url, options, maxRetries = 5) {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       const r = await fetch(url, options);
       if (r.status === 429) {
         const wait = 60 * (attempt + 1);
-        toast('Limite de débit atteinte. Attente ' + wait + 's (tentative ' + (attempt+1) + '/' + maxRetries + ')…', 'warn');
+        toast('Limite de débit. Attente ' + wait + 's (tentative ' + (attempt+1) + '/' + maxRetries + ')…', 'warn');
         await sleep(wait * 1000);
         continue;
       }
@@ -398,34 +411,67 @@ function rotateKey() {
 }
 
 /* ============================================================
+   IMAGE UPLOAD (Base64 local via FileReader)
+============================================================ */
+function setupUpload(zoneId, inputId, previewId, imgId, infoId, removeId, setter) {
+  const zone = $(zoneId), input = $(inputId);
+  const preview = $(previewId), img = $(imgId), info = $(infoId), rm = $(removeId);
+
+  input.addEventListener('change', async (e) => {
+    const f = e.target.files[0];
+    if (!f || !f.type.startsWith('image/')) return;
+    const dataUrl = await new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = ev => res(ev.target.result);
+      r.onerror = rej;
+      r.readAsDataURL(f);
+    });
+    setter(dataUrl);
+    img.src = dataUrl;
+    info.textContent = f.name + ' · ' + (f.size / 1024).toFixed(0) + ' Ko';
+    preview.classList.remove('hidden');
+    zone.style.display = 'none';
+    e.target.value = '';
+  });
+
+  rm.addEventListener('click', () => {
+    setter(null);
+    preview.classList.add('hidden');
+    zone.style.display = '';
+  });
+}
+
+/* ============================================================
    IMAGE GENERATION
 ============================================================ */
 async function generateImage() {
   const prompt = $('imagePrompt').value.trim();
-  if (!prompt) { toast('Prompt requis', 'err'); return; }
+  const hasRef = !!imageBase64;
+  if (!prompt && !hasRef) { toast('Prompt ou image de référence requis', 'err'); return; }
   if (!apiKeys.length) { toast('Configurez vos clés API', 'err'); return; }
 
-  const btn = $('generateImageBtn');
-  const status = $('imageStatus');
-  btn.disabled = true;
-  btn.textContent = '⏳ Génération…';
+  const btn = $('generateImageBtn'), status = $('imageStatus');
+  btn.disabled = true; btn.textContent = '⏳ Génération…';
   status.className = 'status'; status.textContent = '⏳ Envoi de la requête…';
 
-  const size = $('imageSize').value;
-  const ratio = $('imageRatio').value;
+  const size = $('imageSize').value, ratio = $('imageRatio').value;
 
   try {
     const key = rotateKey();
+    const body = {
+      model: AGNES_IMAGE_MODEL,
+      prompt: prompt || 'Transform this image',
+      size: size,
+      ratio: ratio,
+      extra_body: { response_format: 'url' }
+    };
+    // Image-to-image : fournir l'image dans extra_body.image [citation:1][citation:4]
+    if (hasRef) body.extra_body.image = [imageBase64];
+
     const res = await fetchWithRetry(AGNES_BASE + '/v1/images/generations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-      body: JSON.stringify({
-        model: AGNES_IMAGE_MODEL,
-        prompt: prompt,
-        size: size,
-        ratio: ratio,
-        extra_body: { response_format: 'url' }
-      })
+      body: JSON.stringify(body)
     });
 
     if (!res.ok) {
@@ -441,53 +487,57 @@ async function generateImage() {
 
     status.className = 'status ok'; status.textContent = '✓ Image générée';
     toast('Image générée', 'ok');
-    addResult({ type: 'image', url, prompt, size, ratio });
+    addResult({ type: 'image', url, prompt: prompt || '(image de référence)', size, ratio });
 
   } catch (e) {
     status.className = 'status err'; status.textContent = '❌ ' + e.message;
     toast(e.message, 'err');
   } finally {
-    btn.disabled = false;
-    btn.textContent = '🖼️ Générer l\'image';
+    btn.disabled = false; btn.textContent = '🖼️ Générer l\'image';
   }
 }
 
 /* ============================================================
-   VIDEO GENERATION (async + polling)
+   VIDEO GENERATION (avec image de référence optionnelle)
 ============================================================ */
 async function generateVideo() {
   const prompt = $('videoPrompt').value.trim();
+  const hasRef = !!videoBase64;
   if (!prompt) { toast('Prompt requis', 'err'); return; }
   if (!apiKeys.length) { toast('Configurez vos clés API', 'err'); return; }
 
-  const btn = $('generateVideoBtn');
-  const status = $('videoStatus');
+  const btn = $('generateVideoBtn'), status = $('videoStatus');
   const progressWrap = $('videoProgress');
-  const fill = progressWrap.querySelector('.fill');
-  const progText = progressWrap.querySelector('.progress-text');
+  const fill = progressWrap.querySelector('.fill'), progText = progressWrap.querySelector('.progress-text');
 
-  btn.disabled = true;
-  btn.textContent = '⏳ Création de la tâche…';
+  btn.disabled = true; btn.textContent = '⏳ Création de la tâche…';
   status.className = 'status'; status.textContent = '⏳ Création de la tâche vidéo…';
   progressWrap.classList.remove('hidden');
   fill.style.width = '0%'; progText.textContent = '0%';
 
-  const seconds = $('videoSeconds').value;
-  const ratio = $('videoRatio').value;
+  const seconds = $('videoSeconds').value, ratio = $('videoRatio').value;
 
   try {
     const key = rotateKey();
+    // mode 'reference' si image fournie, sinon 'text' [citation:2][citation:9]
+    const body = {
+      model: AGNES_VIDEO_MODEL,
+      prompt: prompt,
+      seconds: seconds,
+      size: '720P',
+      aspect_ratio: ratio
+    };
+    if (hasRef) {
+      body.mode = 'reference';
+      body.images = [videoBase64];
+    } else {
+      body.mode = 'text';
+    }
+
     const createRes = await fetchWithRetry(AGNES_BASE + '/v1/videos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-      body: JSON.stringify({
-        model: AGNES_VIDEO_MODEL,
-        prompt: prompt,
-        seconds: seconds,
-        mode: 'text',
-        size: '720P',
-        aspect_ratio: ratio
-      })
+      body: JSON.stringify(body)
     });
 
     if (!createRes.ok) {
@@ -507,16 +557,12 @@ async function generateVideo() {
       await sleep(2000);
       const pollKey = rotateKey();
       const pollUrl = AGNES_BASE + '/agnesapi?video_id=' + encodeURIComponent(videoId) + '&model_name=' + AGNES_VIDEO_MODEL;
-      const pollRes = await fetch(pollUrl, {
-        headers: { 'Authorization': 'Bearer ' + pollKey }
-      });
+      const pollRes = await fetch(pollUrl, { headers: { 'Authorization': 'Bearer ' + pollKey } });
 
-      if (!pollRes.ok) {
-        if (pollRes.status === 429) {
-          status.textContent = '⏳ Limite de débit, nouvelle tentative dans 60s…';
-          await sleep(60000);
-          continue;
-        }
+      if (!pollRes.ok && pollRes.status === 429) {
+        status.textContent = '⏳ Limite de débit, nouvelle tentative dans 60s…';
+        await sleep(60000);
+        continue;
       }
 
       let pollData;
@@ -524,13 +570,12 @@ async function generateVideo() {
 
       const statusVal = (pollData.status || '').toLowerCase();
       const progress = pollData.progress || 0;
-      fill.style.width = progress + '%';
-      progText.textContent = progress + '%';
-      status.textContent = '⏳ ' + (statusVal === 'queued' ? 'En file d\'attente' : statusVal === 'in_progress' ? 'Génération en cours' : statusVal) + ' — ' + progress + '%';
+      fill.style.width = progress + '%'; progText.textContent = progress + '%';
+      status.textContent = '⏳ ' + (statusVal === 'queued' ? 'En file' : statusVal === 'in_progress' ? 'Génération' : statusVal) + ' — ' + progress + '%';
 
       if (statusVal === 'completed') {
         const videoUrl = pollData.url || (pollData.metadata && pollData.metadata.url);
-        if (!videoUrl) throw new Error('Tâche terminée mais pas d\'URL vidéo');
+        if (!videoUrl) throw new Error('Tâche terminée mais pas d\'URL');
         fill.style.width = '100%'; progText.textContent = '100%';
         status.className = 'status ok'; status.textContent = '✓ Vidéo générée';
         toast('Vidéo générée', 'ok');
@@ -543,7 +588,6 @@ async function generateVideo() {
         throw new Error('Génération échouée : ' + (pollData.error?.message || 'raison inconnue'));
       }
     }
-
     throw new Error('Timeout après ' + (maxPoll * 2) + ' secondes');
 
   } catch (e) {
@@ -551,14 +595,10 @@ async function generateVideo() {
     toast(e.message, 'err');
     progressWrap.classList.add('hidden');
   } finally {
-    btn.disabled = false;
-    btn.textContent = '🎬 Générer la vidéo';
+    btn.disabled = false; btn.textContent = '🎬 Générer la vidéo';
   }
 }
 
-/* ============================================================
-   RESULTS
-============================================================ */
 let resultCount = 0;
 
 function addResult(data) {
@@ -569,7 +609,6 @@ function addResult(data) {
   const grid = $('resultGrid');
   const card = document.createElement('div');
   card.className = 'media-card';
-
   const isVideo = data.type === 'video';
   const mediaEl = isVideo
     ? `<video src="${esc(data.url)}" controls preload="metadata"></video>`
@@ -581,25 +620,22 @@ function addResult(data) {
       <div class="meta">${isVideo ? 'VIDÉO · ' + esc(data.seconds) + 's · ' + esc(data.ratio) : 'IMAGE · ' + esc(data.size) + ' · ' + esc(data.ratio)}</div>
       <textarea readonly>${esc(data.prompt)}</textarea>
       <div class="actions">
-        <button class="btn btn-outline" data-copy>📋 Copier prompt</button>
+        <button class="btn btn-outline" data-copy>📋 Copier</button>
         <button class="btn btn-outline" data-download>⬇ Télécharger</button>
         ${!isVideo ? '<button class="btn btn-outline" data-regen>↻ Régénérer</button>' : ''}
       </div>
     </div>`;
 
   card.querySelector('[data-copy]').addEventListener('click', () => {
-    navigator.clipboard.writeText(data.prompt).then(() => toast('Prompt copié', 'ok')).catch(() => toast('Copie impossible', 'err'));
+    navigator.clipboard.writeText(data.prompt).then(() => toast('Copié', 'ok')).catch(() => toast('Échec', 'err'));
   });
 
-  card.querySelector('[data-download]').addEventListener('click', async () => {
-    try {
-      const a = document.createElement('a');
-      a.href = data.url;
-      a.download = (isVideo ? 'video_' : 'image_') + Date.now() + (isVideo ? '.mp4' : '.png');
-      a.target = '_blank';
-      a.click();
-      toast('Téléchargement lancé', 'ok');
-    } catch (e) { toast('Téléchargement impossible', 'err'); }
+  card.querySelector('[data-download]').addEventListener('click', () => {
+    const a = document.createElement('a');
+    a.href = data.url;
+    a.download = (isVideo ? 'video_' : 'image_') + Date.now() + (isVideo ? '.mp4' : '.png');
+    a.target = '_blank'; a.click();
+    toast('Téléchargement lancé', 'ok');
   });
 
   const regenBtn = card.querySelector('[data-regen]');
@@ -616,9 +652,6 @@ function addResult(data) {
   grid.prepend(card);
 }
 
-/* ============================================================
-   MODE SWITCH
-============================================================ */
 function switchMode(mode) {
   currentMode = mode;
   document.querySelectorAll('.mode-toggle button').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
@@ -626,27 +659,6 @@ function switchMode(mode) {
   $('panelVideo').classList.toggle('hidden', mode !== 'video');
 }
 
-/* ============================================================
-   STEPS LOG
-============================================================ */
-function addStep(label, icon) {
-  const box = $('stepsBox');
-  box.classList.remove('hidden');
-  const el = document.createElement('div');
-  el.className = 'step running';
-  el.innerHTML = `<span class="ico">${icon}</span><span class="msg"><span class="spinner"></span> ${esc(label)}</span>`;
-  box.appendChild(el);
-  return el;
-}
-
-function updateStep(el, msg, ok = true) {
-  el.className = 'step ' + (ok ? 'done' : 'error');
-  el.querySelector('.msg').innerHTML = (ok ? '✓ ' : '❌ ') + esc(msg);
-}
-
-/* ============================================================
-   BOOT
-============================================================ */
 function boot() {
   try {
     const saved = JSON.parse(localStorage.getItem(LS_KEYS) || '[]');
@@ -660,13 +672,15 @@ function boot() {
   updateApiTag();
 }
 
-/* ============================================================
-   BIND EVENTS
-============================================================ */
 function bind() {
   document.querySelectorAll('.mode-toggle button').forEach(btn => {
     btn.addEventListener('click', () => switchMode(btn.dataset.mode));
   });
+
+  // Image upload (mode Image)
+  setupUpload('imageUploadZone', 'imageFileInput', 'imagePreview', 'imagePreviewImg', 'imagePreviewInfo', 'imageRemoveBtn', (v) => { imageBase64 = v; });
+  // Image upload (mode Vidéo)
+  setupUpload('videoUploadZone', 'videoFileInput', 'videoPreview', 'videoPreviewImg', 'videoPreviewInfo', 'videoRemoveBtn', (v) => { videoBase64 = v; });
 
   $('generateImageBtn').addEventListener('click', generateImage);
   $('generateVideoBtn').addEventListener('click', generateVideo);
@@ -678,19 +692,10 @@ function bind() {
 
   $('apiValidate').addEventListener('click', validateKeys);
   $('apiClear').addEventListener('click', () => {
-    $('apiInput').value = '';
-    apiKeys = [];
+    $('apiInput').value = ''; apiKeys = [];
     try { localStorage.removeItem(LS_KEYS); } catch(e) {}
-    $('apiStatus').className = 'status';
-    $('apiStatus').textContent = 'Aucune clé configurée';
+    $('apiStatus').className = 'status'; $('apiStatus').textContent = 'Aucune clé configurée';
     updateApiTag();
-  });
-
-  $('imagePrompt').addEventListener('keydown', e => {
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); generateImage(); }
-  });
-  $('videoPrompt').addEventListener('keydown', e => {
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); generateVideo(); }
   });
 
   boot();
@@ -698,7 +703,6 @@ function bind() {
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind);
 else bind();
-
 </script>
 </body>
 </html>
