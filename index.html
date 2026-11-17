@@ -87,7 +87,6 @@ select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml;u
 }
 .mode-toggle button.active{background:var(--bg3);color:var(--ink);box-shadow:0 2px 8px rgba(0,0,0,.3)}
 
-/* Image upload */
 .upload-zone{
   position:relative;border:1.5px dashed var(--line2);border-radius:12px;padding:1rem;text-align:center;
   cursor:pointer;background:var(--bg);transition:.2s;
@@ -104,6 +103,16 @@ select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml;u
   cursor:pointer;font-size:.7rem;display:grid;place-items:center;transition:.2s;
 }
 .upload-preview .rm:hover{transform:rotate(90deg)}
+
+.prompt-row{display:flex;align-items:flex-start;gap:.5rem;margin-bottom:.4rem}
+.prompt-row textarea{flex:1}
+.btn-improve{
+  min-height:44px;padding:.5rem .9rem;border-radius:var(--radius-sm);background:var(--bg3);
+  border:1px solid var(--line2);color:var(--ink2);font:700 10px var(--mono);cursor:pointer;
+  white-space:nowrap;transition:.18s;align-self:flex-start;
+}
+.btn-improve:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.btn-improve:disabled{opacity:.4;cursor:not-allowed}
 
 #apiPanel{position:fixed;bottom:0;left:0;right:0;z-index:40;background:var(--bg2);border-top:1px solid var(--line);box-shadow:0 -8px 32px rgba(0,0,0,.4)}
 #apiHead{padding:.75rem 1.2rem;cursor:pointer;display:flex;align-items:center;gap:.8rem;user-select:none}
@@ -191,7 +200,10 @@ select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml;u
     </div>
 
     <label class="lab">Prompt</label>
-    <textarea id="imagePrompt" placeholder="Décrivez l'image que vous voulez générer… (optionnel si une image de référence est fournie)"></textarea>
+    <div class="prompt-row">
+      <textarea id="imagePrompt" placeholder="Décrivez la scène en français… Ex: Un homme en costume, dans un bar années 20, lumière tamisée, ambiance glamour"></textarea>
+      <button class="btn-improve" id="improveImageBtn">✨ Améliorer</button>
+    </div>
 
     <div class="row" style="margin-top:.4rem">
       <div>
@@ -239,7 +251,10 @@ select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml;u
     </div>
 
     <label class="lab">Prompt</label>
-    <textarea id="videoPrompt" placeholder="Décrivez la vidéo que vous voulez générer… Ex: Une vague déferlante au coucher du soleil, ralenti cinématographique, lumière dorée"></textarea>
+    <div class="prompt-row">
+      <textarea id="videoPrompt" placeholder="Décrivez la scène en français… Ex: Une femme marche dans une rue de Paris sous la pluie, lumière dorée, ambiance cinématographique"></textarea>
+      <button class="btn-improve" id="improveVideoBtn">✨ Améliorer</button>
+    </div>
 
     <div class="row" style="margin-top:.4rem">
       <div>
@@ -263,7 +278,7 @@ select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml;u
       </div>
     </div>
 
-    <p style="font:500 10px var(--mono);color:var(--ink3);margin-top:.4rem">⚡ Résolution fixe 720P · RPM gratuit : 1 vidéo/min · Nouvelle tentative automatique en cas d'échec</p>
+    <p style="font:500 10px var(--mono);color:var(--ink3);margin-top:.4rem">⚡ Résolution fixe 720P · RPM gratuit : 1 vidéo/min · Relance automatique si file pleine</p>
 
     <button class="btn-mega" id="generateVideoBtn">🎬 Générer la vidéo</button>
     <div id="videoStatus" class="status" style="margin-top:.6rem">Prêt</div>
@@ -310,7 +325,7 @@ select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml;u
 const AGNES_BASE = 'https://apihub.agnes-ai.com';
 const AGNES_IMAGE_MODEL = 'agnes-image-2.5-flash';
 const AGNES_VIDEO_MODEL = 'agnes-video-2.5-flash';
-const LS_KEYS = 'creatspeed_keys_v2';
+const LS_KEYS = 'creatspeed_keys_v3';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -344,6 +359,72 @@ function updateApiTag() {
   }
 }
 
+/* ============================================================
+   AUTO-DIRECTOR : Traduction & enrichissement du prompt
+============================================================ */
+const DIRECTOR_SYSTEM = `You are a world-class cinematic prompt engineer. Convert the user's French description into ONE detailed English image/video generation prompt.
+
+RULES:
+- Output ONLY the final English prompt. No explanations, no quotes, no preamble.
+- Structure: [Subject + pose/expression] → [Environment/background] → [Lighting] → [Camera/composition] → [Style/texture] → [Quality].
+- Be extremely descriptive: skin texture (pores, realistic), depth of field, lens type (35mm, 85mm), lighting direction (golden hour, rim light, softbox), color grading.
+- If the user describes something alluring, sensual, or glamorous, translate it into HIGH-END FASHION EDITORIAL vocabulary: "alluring pose", "warm cinematic lighting", "candid photography", "editorial fashion photography", "intimate atmosphere", "soft focus". NEVER use explicit or vulgar terms.
+- If the user mentions "deux personnes" or "plusieurs", describe natural interaction between them.
+- The final prompt must be in English, 80-150 words, dense and cinematic.`;
+
+async function translatePrompt(frenchText, hasRef) {
+  const userMsg = hasRef
+    ? `French description: "${frenchText}"\n\nIMPORTANT: An identity reference image will be provided. Start the English prompt with: "Keep the exact facial features and identity of the person from the reference image, but freely place them in a newly imagined, detailed environment and pose as requested:" followed by the translated scene description. Add: "Ensure any additional characters interact naturally in the frame."`
+    : `French description: "${frenchText}"`;
+
+  const key = rotateKey();
+  const res = await fetchWithRetry(AGNES_BASE + '/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+    body: JSON.stringify({
+      model: 'agnes-2.5-flash',
+      messages: [
+        { role: 'system', content: DIRECTOR_SYSTEM },
+        { role: 'user', content: userMsg }
+      ],
+      temperature: 0.7,
+      max_tokens: 400
+    })
+  }, 3);
+
+  if (!res.ok) throw new Error('Traduction échouée (HTTP ' + res.status + ')');
+  const data = await res.json();
+  const txt = (data.choices?.[0]?.message?.content || '').trim();
+  if (!txt) throw new Error('Réponse vide du directeur IA');
+  return txt;
+}
+
+async function improvePrompt(which) {
+  const isImage = which === 'image';
+  const ta = isImage ? $('imagePrompt') : $('videoPrompt');
+  const btn = isImage ? $('improveImageBtn') : $('improveVideoBtn');
+  const frenchText = ta.value.trim();
+  if (!frenchText) { toast('Écrivez d\'abord un prompt', 'err'); return; }
+  if (!apiKeys.length) { toast('Configurez vos clés API', 'err'); return; }
+
+  btn.disabled = true;
+  btn.textContent = '⏳…';
+  try {
+    const hasRef = isImage ? !!imageBase64 : !!videoBase64;
+    const englishPrompt = await translatePrompt(frenchText, hasRef);
+    ta.value = englishPrompt;
+    toast('Prompt enrichi et traduit', 'ok');
+  } catch (e) {
+    toast('Amélioration : ' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✨ Améliorer';
+  }
+}
+
+/* ============================================================
+   API KEYS
+============================================================ */
 async function testKeys(rawKeys) {
   const results = [];
   for (const key of rawKeys) {
@@ -390,7 +471,7 @@ async function fetchWithRetry(url, options, maxRetries = 5) {
       const r = await fetch(url, options);
       if (r.status === 429) {
         const wait = 60 * (attempt + 1);
-        toast('Limite de débit. Attente ' + wait + 's (tentative ' + (attempt+1) + '/' + maxRetries + ')…', 'warn');
+        toast('Limite de débit. Attente ' + wait + 's…', 'warn');
         await sleep(wait * 1000);
         continue;
       }
@@ -411,7 +492,7 @@ function rotateKey() {
 }
 
 /* ============================================================
-   IMAGE UPLOAD (Base64 local via FileReader)
+   UPLOAD
 ============================================================ */
 function setupUpload(zoneId, inputId, previewId, imgId, infoId, removeId, setter) {
   const zone = $(zoneId), input = $(inputId);
@@ -445,29 +526,40 @@ function setupUpload(zoneId, inputId, previewId, imgId, infoId, removeId, setter
    IMAGE GENERATION
 ============================================================ */
 async function generateImage() {
-  const prompt = $('imagePrompt').value.trim();
+  let prompt = $('imagePrompt').value.trim();
   const hasRef = !!imageBase64;
   if (!prompt && !hasRef) { toast('Prompt ou image de référence requis', 'err'); return; }
   if (!apiKeys.length) { toast('Configurez vos clés API', 'err'); return; }
 
   const btn = $('generateImageBtn'), status = $('imageStatus');
   btn.disabled = true; btn.textContent = '⏳ Génération…';
-  status.className = 'status'; status.textContent = '⏳ Envoi de la requête…';
+  status.className = 'status'; status.textContent = '⏳ Envoi…';
 
   const size = $('imageSize').value, ratio = $('imageRatio').value;
 
   try {
+    // Auto-Director : traduire si le prompt est en français (heuristique : présence de mots français courants)
+    if (prompt && !/^(keep|a |an |the |cinematic|portrait|close-up|wide|editorial)/i.test(prompt)) {
+      status.textContent = '🎬 Le directeur IA enrichit le prompt…';
+      try {
+        prompt = await translatePrompt(prompt, hasRef);
+      } catch (e) {
+        // Si la traduction échoue, on continue avec le prompt original
+        console.warn('Auto-Director échoué, utilisation du prompt original');
+      }
+    }
+
     const key = rotateKey();
     const body = {
       model: AGNES_IMAGE_MODEL,
-      prompt: prompt || 'Transform this image',
+      prompt: prompt || 'Create a highly detailed, cinematic, photorealistic image',
       size: size,
       ratio: ratio,
       extra_body: { response_format: 'url' }
     };
-    // Image-to-image : fournir l'image dans extra_body.image [citation:1][citation:4]
     if (hasRef) body.extra_body.image = [imageBase64];
 
+    status.textContent = '⏳ Génération de l\'image…';
     const res = await fetchWithRetry(AGNES_BASE + '/v1/images/generations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
@@ -487,7 +579,7 @@ async function generateImage() {
 
     status.className = 'status ok'; status.textContent = '✓ Image générée';
     toast('Image générée', 'ok');
-    addResult({ type: 'image', url, prompt: prompt || '(image de référence)', size, ratio });
+    addResult({ type: 'image', url, prompt, size, ratio });
 
   } catch (e) {
     status.className = 'status err'; status.textContent = '❌ ' + e.message;
@@ -498,10 +590,10 @@ async function generateImage() {
 }
 
 /* ============================================================
-   VIDEO GENERATION (avec image de référence optionnelle)
+   VIDEO GENERATION (avec relance 503 video_queue_full)
 ============================================================ */
 async function generateVideo() {
-  const prompt = $('videoPrompt').value.trim();
+  let prompt = $('videoPrompt').value.trim();
   const hasRef = !!videoBase64;
   if (!prompt) { toast('Prompt requis', 'err'); return; }
   if (!apiKeys.length) { toast('Configurez vos clés API', 'err'); return; }
@@ -510,48 +602,78 @@ async function generateVideo() {
   const progressWrap = $('videoProgress');
   const fill = progressWrap.querySelector('.fill'), progText = progressWrap.querySelector('.progress-text');
 
-  btn.disabled = true; btn.textContent = '⏳ Création de la tâche…';
-  status.className = 'status'; status.textContent = '⏳ Création de la tâche vidéo…';
+  btn.disabled = true; btn.textContent = '⏳ Préparation…';
+  status.className = 'status'; status.textContent = '⏳ Préparation…';
   progressWrap.classList.remove('hidden');
   fill.style.width = '0%'; progText.textContent = '0%';
 
   const seconds = $('videoSeconds').value, ratio = $('videoRatio').value;
 
   try {
-    const key = rotateKey();
-    // mode 'reference' si image fournie, sinon 'text' [citation:2][citation:9]
-    const body = {
-      model: AGNES_VIDEO_MODEL,
-      prompt: prompt,
-      seconds: seconds,
-      size: '720P',
-      aspect_ratio: ratio
-    };
-    if (hasRef) {
-      body.mode = 'reference';
-      body.images = [videoBase64];
-    } else {
-      body.mode = 'text';
+    // Auto-Director
+    if (!/^(keep|a |an |the |cinematic|portrait|close-up|wide|editorial)/i.test(prompt)) {
+      status.textContent = '🎬 Le directeur IA enrichit le prompt…';
+      try { prompt = await translatePrompt(prompt, hasRef); } catch (e) {}
     }
 
-    const createRes = await fetchWithRetry(AGNES_BASE + '/v1/videos', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-      body: JSON.stringify(body)
-    });
+    status.textContent = '⏳ Création de la tâche vidéo…';
+    btn.textContent = '⏳ Envoi…';
 
-    if (!createRes.ok) {
-      const txt = await createRes.text();
-      throw new Error('Création HTTP ' + createRes.status + ' — ' + txt.slice(0, 200));
+    // Boucle de relance pour 503 video_queue_full
+    let videoId = null;
+    let attempts = 0;
+    const maxQueueAttempts = 30; // ~5 min max en file d'attente
+
+    while (!videoId && attempts < maxQueueAttempts) {
+      attempts++;
+      const key = rotateKey();
+      const body = {
+        model: AGNES_VIDEO_MODEL,
+        prompt: prompt,
+        seconds: seconds,
+        size: '720P',
+        aspect_ratio: ratio,
+        mode: hasRef ? 'reference' : 'text'
+      };
+      if (hasRef) body.images = [videoBase64];
+
+      const createRes = await fetch(AGNES_BASE + '/v1/videos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+        body: JSON.stringify(body)
+      });
+
+      if (createRes.status === 503) {
+        const errTxt = await createRes.text();
+        const isQueueFull = errTxt.includes('video_queue_full') || errTxt.includes('queue_full');
+        if (isQueueFull) {
+          status.className = 'status warn';
+          status.textContent = '⏳ File d\'attente pleine (503 video_queue_full). Relance dans 10s… (tentative ' + attempts + '/' + maxQueueAttempts + ')';
+          for (let s = 10; s > 0; s--) {
+            status.textContent = '⏳ File d\'attente pleine. Relance dans ' + s + 's… (tentative ' + attempts + '/' + maxQueueAttempts + ')';
+            await sleep(1000);
+          }
+          continue;
+        }
+        throw new Error('HTTP 503 — ' + errTxt.slice(0, 200));
+      }
+
+      if (!createRes.ok) {
+        const txt = await createRes.text();
+        throw new Error('Création HTTP ' + createRes.status + ' — ' + txt.slice(0, 200));
+      }
+
+      const createData = await createRes.json();
+      videoId = createData.video_id || createData.id || createData.task_id;
+      if (!videoId) throw new Error('Pas de video_id dans la réponse');
     }
 
-    const createData = await createRes.json();
-    const videoId = createData.video_id || createData.id || createData.task_id;
-    if (!videoId) throw new Error('Pas de video_id dans la réponse');
+    if (!videoId) throw new Error('Impossible d\'entrer dans la file après ' + maxQueueAttempts + ' tentatives');
 
-    status.textContent = '⏳ Tâche créée (' + videoId.slice(0, 16) + '…), interrogation du statut…';
-    btn.textContent = '⏳ Génération en cours…';
+    status.textContent = '⏳ Tâche acceptée (' + videoId.slice(0, 12) + '…), génération en cours…';
+    btn.textContent = '⏳ Génération…';
 
+    // Polling
     const maxPoll = 180;
     for (let i = 0; i < maxPoll; i++) {
       await sleep(2000);
@@ -571,7 +693,7 @@ async function generateVideo() {
       const statusVal = (pollData.status || '').toLowerCase();
       const progress = pollData.progress || 0;
       fill.style.width = progress + '%'; progText.textContent = progress + '%';
-      status.textContent = '⏳ ' + (statusVal === 'queued' ? 'En file' : statusVal === 'in_progress' ? 'Génération' : statusVal) + ' — ' + progress + '%';
+      status.textContent = '⏳ ' + (statusVal === 'queued' ? 'En file d\'attente' : statusVal === 'in_progress' ? 'Génération' : statusVal) + ' — ' + progress + '%';
 
       if (statusVal === 'completed') {
         const videoUrl = pollData.url || (pollData.metadata && pollData.metadata.url);
@@ -677,10 +799,11 @@ function bind() {
     btn.addEventListener('click', () => switchMode(btn.dataset.mode));
   });
 
-  // Image upload (mode Image)
   setupUpload('imageUploadZone', 'imageFileInput', 'imagePreview', 'imagePreviewImg', 'imagePreviewInfo', 'imageRemoveBtn', (v) => { imageBase64 = v; });
-  // Image upload (mode Vidéo)
   setupUpload('videoUploadZone', 'videoFileInput', 'videoPreview', 'videoPreviewImg', 'videoPreviewInfo', 'videoRemoveBtn', (v) => { videoBase64 = v; });
+
+  $('improveImageBtn').addEventListener('click', () => improvePrompt('image'));
+  $('improveVideoBtn').addEventListener('click', () => improvePrompt('video'));
 
   $('generateImageBtn').addEventListener('click', generateImage);
   $('generateVideoBtn').addEventListener('click', generateVideo);
