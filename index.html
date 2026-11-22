@@ -144,17 +144,21 @@ select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml;u
 .result-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;margin-top:.8rem}
 .media-card{background:var(--bg3);border:1px solid var(--line);border-radius:14px;overflow:hidden;transition:.2s}
 .media-card:hover{border-color:var(--line2)}
-.media-card img,.media-card video{width:100%;display:block;background:#000}
+.media-card img,.media-card video{width:100%;display:block;background:#000;cursor:pointer}
 .media-card .info{padding:.6rem .8rem;border-top:1px solid var(--line)}
 .media-card .meta{font:600 9px var(--mono);color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.3rem}
 .media-card textarea{min-height:60px;font:500 10px/1.5 var(--mono);padding:.4rem .5rem;font-size:10px}
 .media-card .actions{display:flex;gap:.4rem;margin-top:.4rem;flex-wrap:wrap}
 .media-card .actions .btn{min-height:30px;padding:.3rem .7rem;font-size:9px}
 
-.progress-wrap{margin-top:.6rem}
-.progress-bar{height:6px;background:var(--bg);border-radius:99px;overflow:hidden}
-.progress-bar .fill{height:100%;background:var(--accent);border-radius:99px;transition:width .3s}
-.progress-text{font:500 10px var(--mono);color:var(--ink3);margin-top:.3rem}
+/* Lightbox */
+#lightbox{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.92);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.25s;padding:1.5rem}
+#lightbox.on{opacity:1;pointer-events:auto}
+#lightbox img,#lightbox video{max-width:90vw;max-height:80vh;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.7)}
+#lightbox .lb-close{position:absolute;top:1.2rem;right:1.2rem;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.1);border:none;color:#fff;font-size:1.2rem;cursor:pointer;display:grid;place-items:center;transition:.2s}
+#lightbox .lb-close:hover{background:var(--red);transform:rotate(90deg)}
+#lightbox .lb-edit{position:absolute;bottom:1.5rem;left:50%;transform:translateX(-50%);padding:.7rem 1.4rem;border-radius:99px;background:var(--accent);color:#fff;border:none;font:700 12px var(--sans);cursor:pointer;display:flex;align-items:center;gap:.5rem;box-shadow:0 8px 24px rgba(108,140,255,.4)}
+#lightbox .lb-edit:hover{background:var(--accent2)}
 
 #toast{position:fixed;top:68px;left:50%;transform:translateX(-50%) translateY(-120px);display:flex;align-items:center;gap:.6rem;background:var(--bg3);color:var(--ink);border-radius:99px;padding:.7rem 1.4rem;font:600 11px var(--mono);z-index:200;opacity:0;transition:.3s cubic-bezier(.2,.9,.3,1.2);max-width:min(500px,92vw);box-shadow:0 8px 32px rgba(0,0,0,.5);border:1px solid var(--line)}
 #toast::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0}
@@ -317,6 +321,13 @@ select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml;u
   </div>
 </div>
 
+<!-- Lightbox -->
+<div id="lightbox">
+  <button class="lb-close" id="lbClose">✕</button>
+  <div id="lbContent"></div>
+  <button class="lb-edit" id="lbEdit">✏️ Modifier / Continuer</button>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -325,7 +336,7 @@ select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml;u
 const AGNES_BASE = 'https://apihub.agnes-ai.com';
 const AGNES_IMAGE_MODEL = 'agnes-image-2.5-flash';
 const AGNES_VIDEO_MODEL = 'agnes-video-2.5-flash';
-const LS_KEYS = 'creatspeed_keys_v3';
+const LS_KEYS = 'creatspeed_keys_v4';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -335,6 +346,7 @@ let apiKeys = [];
 let currentMode = 'image';
 let imageBase64 = null;
 let videoBase64 = null;
+let currentLightboxItem = null;
 
 function toast(msg, type = '') {
   const t = $('toast');
@@ -360,7 +372,7 @@ function updateApiTag() {
 }
 
 /* ============================================================
-   AUTO-DIRECTOR : Traduction & enrichissement du prompt
+   AUTO-DIRECTOR
 ============================================================ */
 const DIRECTOR_SYSTEM = `You are a world-class cinematic prompt engineer. Convert the user's French description into ONE detailed English image/video generation prompt.
 
@@ -374,7 +386,7 @@ RULES:
 
 async function translatePrompt(frenchText, hasRef) {
   const userMsg = hasRef
-    ? `French description: "${frenchText}"\n\nIMPORTANT: An identity reference image will be provided. Start the English prompt with: "Keep the exact facial features and identity of the person from the reference image, but freely place them in a newly imagined, detailed environment and pose as requested:" followed by the translated scene description. Add: "Ensure any additional characters interact naturally in the frame."`
+    ? `French description: "${frenchText}"\n\nIMPORTANT: An identity reference image will be provided. Start the English prompt with: "Preserve the exact facial features, identity, and likeness of the person(s) from the reference image. Place them naturally in a newly imagined, detailed environment with the requested pose, action, and outfit:" followed by the translated scene description. Add: "Any additional characters must interact naturally with them."`
     : `French description: "${frenchText}"`;
 
   const key = rotateKey();
@@ -522,6 +534,58 @@ function setupUpload(zoneId, inputId, previewId, imgId, infoId, removeId, setter
   });
 }
 
+function setReferenceImage(which, dataUrl, label) {
+  if (which === 'image') {
+    imageBase64 = dataUrl;
+    $('imagePreviewImg').src = dataUrl;
+    $('imagePreviewInfo').textContent = label || 'Image de suivi';
+    $('imagePreview').classList.remove('hidden');
+    $('imageUploadZone').style.display = 'none';
+  } else {
+    videoBase64 = dataUrl;
+    $('videoPreviewImg').src = dataUrl;
+    $('videoPreviewInfo').textContent = label || 'Image de suivi';
+    $('videoPreview').classList.remove('hidden');
+    $('videoUploadZone').style.display = 'none';
+  }
+}
+
+/* ============================================================
+   LIGHTBOX
+============================================================ */
+function openLightbox(item) {
+  currentLightboxItem = item;
+  const lb = $('lightbox');
+  const content = $('lbContent');
+  if (item.type === 'video') {
+    content.innerHTML = `<video src="${esc(item.url)}" controls autoplay style="max-width:90vw;max-height:80vh;border-radius:12px"></video>`;
+  } else {
+    content.innerHTML = `<img src="${esc(item.url)}" alt="" style="max-width:90vw;max-height:80vh;border-radius:12px">`;
+  }
+  lb.classList.add('on');
+}
+
+function closeLightbox() {
+  $('lightbox').classList.remove('on');
+  $('lbContent').innerHTML = '';
+  currentLightboxItem = null;
+}
+
+function editFromLightbox() {
+  if (!currentLightboxItem) return;
+  const item = currentLightboxItem;
+  closeLightbox();
+  // Charger l'image (ou une frame de la vidéo) comme référence
+  setReferenceImage(currentMode, item.url, 'Suivi : image précédente');
+  // Pré-remplir le prompt
+  const ta = currentMode === 'image' ? $('imagePrompt') : $('videoPrompt');
+  ta.value = '';
+  ta.placeholder = 'Décrivez la suite ou la modification… Ex: Maintenant il porte un costume noir et marche dans la rue';
+  ta.focus();
+  toast('Image chargée comme référence. Décrivez la suite !', 'ok');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 /* ============================================================
    IMAGE GENERATION
 ============================================================ */
@@ -538,15 +602,9 @@ async function generateImage() {
   const size = $('imageSize').value, ratio = $('imageRatio').value;
 
   try {
-    // Auto-Director : traduire si le prompt est en français (heuristique : présence de mots français courants)
-    if (prompt && !/^(keep|a |an |the |cinematic|portrait|close-up|wide|editorial)/i.test(prompt)) {
+    if (prompt && !/^(keep|preserve|a |an |the |cinematic|portrait|close-up|wide|editorial)/i.test(prompt)) {
       status.textContent = '🎬 Le directeur IA enrichit le prompt…';
-      try {
-        prompt = await translatePrompt(prompt, hasRef);
-      } catch (e) {
-        // Si la traduction échoue, on continue avec le prompt original
-        console.warn('Auto-Director échoué, utilisation du prompt original');
-      }
+      try { prompt = await translatePrompt(prompt, hasRef); } catch (e) {}
     }
 
     const key = rotateKey();
@@ -590,7 +648,7 @@ async function generateImage() {
 }
 
 /* ============================================================
-   VIDEO GENERATION (avec relance 503 video_queue_full)
+   VIDEO GENERATION (503 retry)
 ============================================================ */
 async function generateVideo() {
   let prompt = $('videoPrompt').value.trim();
@@ -610,8 +668,7 @@ async function generateVideo() {
   const seconds = $('videoSeconds').value, ratio = $('videoRatio').value;
 
   try {
-    // Auto-Director
-    if (!/^(keep|a |an |the |cinematic|portrait|close-up|wide|editorial)/i.test(prompt)) {
+    if (!/^(keep|preserve|a |an |the |cinematic|portrait|close-up|wide|editorial)/i.test(prompt)) {
       status.textContent = '🎬 Le directeur IA enrichit le prompt…';
       try { prompt = await translatePrompt(prompt, hasRef); } catch (e) {}
     }
@@ -619,10 +676,9 @@ async function generateVideo() {
     status.textContent = '⏳ Création de la tâche vidéo…';
     btn.textContent = '⏳ Envoi…';
 
-    // Boucle de relance pour 503 video_queue_full
     let videoId = null;
     let attempts = 0;
-    const maxQueueAttempts = 30; // ~5 min max en file d'attente
+    const maxQueueAttempts = 30;
 
     while (!videoId && attempts < maxQueueAttempts) {
       attempts++;
@@ -648,7 +704,6 @@ async function generateVideo() {
         const isQueueFull = errTxt.includes('video_queue_full') || errTxt.includes('queue_full');
         if (isQueueFull) {
           status.className = 'status warn';
-          status.textContent = '⏳ File d\'attente pleine (503 video_queue_full). Relance dans 10s… (tentative ' + attempts + '/' + maxQueueAttempts + ')';
           for (let s = 10; s > 0; s--) {
             status.textContent = '⏳ File d\'attente pleine. Relance dans ' + s + 's… (tentative ' + attempts + '/' + maxQueueAttempts + ')';
             await sleep(1000);
@@ -673,7 +728,6 @@ async function generateVideo() {
     status.textContent = '⏳ Tâche acceptée (' + videoId.slice(0, 12) + '…), génération en cours…';
     btn.textContent = '⏳ Génération…';
 
-    // Polling
     const maxPoll = 180;
     for (let i = 0; i < maxPoll; i++) {
       await sleep(2000);
@@ -721,6 +775,9 @@ async function generateVideo() {
   }
 }
 
+/* ============================================================
+   RESULTS + LIGHTBOX + EDIT
+============================================================ */
 let resultCount = 0;
 
 function addResult(data) {
@@ -733,8 +790,8 @@ function addResult(data) {
   card.className = 'media-card';
   const isVideo = data.type === 'video';
   const mediaEl = isVideo
-    ? `<video src="${esc(data.url)}" controls preload="metadata"></video>`
-    : `<img src="${esc(data.url)}" alt="" loading="lazy">`;
+    ? `<video src="${esc(data.url)}" controls preload="metadata" data-lightbox></video>`
+    : `<img src="${esc(data.url)}" alt="" loading="lazy" data-lightbox>`;
 
   card.innerHTML = `
     ${mediaEl}
@@ -742,16 +799,41 @@ function addResult(data) {
       <div class="meta">${isVideo ? 'VIDÉO · ' + esc(data.seconds) + 's · ' + esc(data.ratio) : 'IMAGE · ' + esc(data.size) + ' · ' + esc(data.ratio)}</div>
       <textarea readonly>${esc(data.prompt)}</textarea>
       <div class="actions">
+        <button class="btn btn-outline" data-edit>✏️ Modifier</button>
         <button class="btn btn-outline" data-copy>📋 Copier</button>
         <button class="btn btn-outline" data-download>⬇ Télécharger</button>
-        ${!isVideo ? '<button class="btn btn-outline" data-regen>↻ Régénérer</button>' : ''}
       </div>
     </div>`;
 
+  // Lightbox au clic sur le média (mais pas sur les contrôles vidéo)
+  const mediaElNode = card.querySelector('[data-lightbox]');
+  mediaElNode.addEventListener('click', (e) => {
+    if (isVideo && e.target.tagName === 'VIDEO') {
+      // Si l'utilisateur clique sur les contrôles, ne pas ouvrir le lightbox
+      const rect = e.target.getBoundingClientRect();
+      const y = e.clientY - rect.top;
+      if (y > rect.height - 40) return; // zone des contrôles
+    }
+    openLightbox(data);
+  });
+
+  // Edit
+  card.querySelector('[data-edit]').addEventListener('click', () => {
+    setReferenceImage(currentMode, data.url, 'Suivi : ' + (isVideo ? 'vidéo' : 'image') + ' précédente');
+    const ta = currentMode === 'image' ? $('imagePrompt') : $('videoPrompt');
+    ta.value = '';
+    ta.placeholder = 'Décrivez la suite ou la modification…';
+    ta.focus();
+    toast('Image chargée comme référence. Décrivez la suite !', 'ok');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  // Copy
   card.querySelector('[data-copy]').addEventListener('click', () => {
     navigator.clipboard.writeText(data.prompt).then(() => toast('Copié', 'ok')).catch(() => toast('Échec', 'err'));
   });
 
+  // Download
   card.querySelector('[data-download]').addEventListener('click', () => {
     const a = document.createElement('a');
     a.href = data.url;
@@ -759,17 +841,6 @@ function addResult(data) {
     a.target = '_blank'; a.click();
     toast('Téléchargement lancé', 'ok');
   });
-
-  const regenBtn = card.querySelector('[data-regen]');
-  if (regenBtn) {
-    regenBtn.addEventListener('click', () => {
-      $('imagePrompt').value = data.prompt;
-      $('imageSize').value = data.size;
-      $('imageRatio').value = data.ratio;
-      switchMode('image');
-      generateImage();
-    });
-  }
 
   grid.prepend(card);
 }
@@ -819,6 +890,16 @@ function bind() {
     try { localStorage.removeItem(LS_KEYS); } catch(e) {}
     $('apiStatus').className = 'status'; $('apiStatus').textContent = 'Aucune clé configurée';
     updateApiTag();
+  });
+
+  // Lightbox controls
+  $('lbClose').addEventListener('click', closeLightbox);
+  $('lightbox').addEventListener('click', (e) => {
+    if (e.target.id === 'lightbox' || e.target.id === 'lbContent') closeLightbox();
+  });
+  $('lbEdit').addEventListener('click', editFromLightbox);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeLightbox();
   });
 
   boot();
